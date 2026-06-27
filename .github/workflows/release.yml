@@ -1,0 +1,30 @@
+name: release
+on:
+  release:
+    types: [published]
+permissions:
+  contents: write
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build install zip (top folder = plugin slug)
+        run: |
+          MAIN=$(grep -rl 'Plugin Name:' --include='*.php' . | head -1)
+          SLUG=$(basename "$MAIN" .php)
+          mkdir -p "build/$SLUG"
+          rsync -a --exclude='.git' --exclude='.github' --exclude='build' --exclude='README.md' ./ "build/$SLUG/"
+          (cd build && zip -rq "../$SLUG.zip" "$SLUG")
+          echo "ZIP=$SLUG.zip" >> "$GITHUB_ENV"
+      - name: Attach the zip to the GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ZIP }}
+      # WordPress.org auto-deploy — uncomment once the plugin is listed on WordPress.org and the
+      # WPORG_SVN_USERNAME / WPORG_SVN_PASSWORD secrets are set:
+      # - uses: 10up/action-wordpress-plugin-deploy@stable
+      #   env:
+      #     SVN_USERNAME: ${{ secrets.WPORG_SVN_USERNAME }}
+      #     SVN_PASSWORD: ${{ secrets.WPORG_SVN_PASSWORD }}
+      #     SLUG: cryptogate-woocommerce
