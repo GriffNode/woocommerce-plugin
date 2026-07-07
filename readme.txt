@@ -1,5 +1,5 @@
 === GriffNode for WooCommerce ===
-Contributors: cryptogate
+Contributors: griffnode
 Tags: woocommerce, cryptocurrency, bitcoin, crypto payments, payment gateway
 Requires at least: 6.0
 Tested up to: 6.6
