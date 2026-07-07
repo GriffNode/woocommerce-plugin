@@ -1,24 +1,24 @@
 <?php
 defined( 'ABSPATH' ) || exit;
 
-class CryptoGate_Webhook {
+class GriffNode_Webhook {
 
     /**
-     * Entry point — hooked to woocommerce_api_cryptogate.
-     * URL: https://yoursite.com/?wc-api=cryptogate
+     * Entry point — hooked to woocommerce_api_griffnode.
+     * URL: https://yoursite.com/?wc-api=griffnode
      */
     public static function handle() {
         $raw_body = file_get_contents( 'php://input' );
 
         // Verify HMAC-SHA256 signature.
-        $gateway = new CryptoGate_Gateway();
+        $gateway = new GriffNode_Gateway();
         $secret  = $gateway->get_option( 'webhook_secret' );
 
         if ( empty( $secret ) ) {
             self::respond( 400, 'Webhook secret not configured.' );
         }
 
-        $sig_header = $_SERVER['HTTP_X_CRYPTOGATE_SIGNATURE'] ?? '';
+        $sig_header = $_SERVER['HTTP_X_GRIFFNODE_SIGNATURE'] ?? '';
         // Header format: "sha256=<hex>"
         $expected = 'sha256=' . hash_hmac( 'sha256', $raw_body, $secret );
 
@@ -59,7 +59,7 @@ class CryptoGate_Webhook {
 
         $order->payment_complete( $event['transaction_id'] ?? '' );
         $order->add_order_note( sprintf(
-            __( 'CryptoGate payment confirmed. TX: %s | Crypto: %s | Amount: %s %s', 'cryptogate-woocommerce' ),
+            __( 'GriffNode payment confirmed. TX: %s | Crypto: %s | Amount: %s %s', 'griffnode-woocommerce' ),
             $event['transaction_id'] ?? '—',
             $event['currency_crypto'] ?? '—',
             $event['amount_crypto'] ?? '—',
@@ -72,7 +72,7 @@ class CryptoGate_Webhook {
         if ( ! $order ) return;
 
         $order->update_status( 'on-hold', sprintf(
-            __( 'CryptoGate partial payment received. TX: %s — customer paid less than required. Awaiting resolution.', 'cryptogate-woocommerce' ),
+            __( 'GriffNode partial payment received. TX: %s — customer paid less than required. Awaiting resolution.', 'griffnode-woocommerce' ),
             $event['transaction_id'] ?? '—'
         ) );
     }
@@ -83,7 +83,7 @@ class CryptoGate_Webhook {
 
         if ( $order->has_status( 'pending' ) ) {
             $order->update_status( 'cancelled', sprintf(
-                __( 'CryptoGate payment window expired. TX: %s', 'cryptogate-woocommerce' ),
+                __( 'GriffNode payment window expired. TX: %s', 'griffnode-woocommerce' ),
                 $event['transaction_id'] ?? '—'
             ) );
         }
@@ -104,12 +104,12 @@ class CryptoGate_Webhook {
             if ( $order ) return $order;
         }
 
-        // Fallback: search by the stored CryptoGate txid.
+        // Fallback: search by the stored GriffNode txid.
         $txid = $event['transaction_id'] ?? '';
         if ( ! $txid ) return null;
 
         $orders = wc_get_orders( [
-            'meta_key'   => '_cryptogate_txid',
+            'meta_key'   => '_griffnode_txid',
             'meta_value' => $txid,
             'limit'      => 1,
         ] );

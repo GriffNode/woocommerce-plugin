@@ -1,12 +1,12 @@
 <?php
 defined( 'ABSPATH' ) || exit;
 
-class CryptoGate_Gateway extends WC_Payment_Gateway {
+class GriffNode_Gateway extends WC_Payment_Gateway {
 
     public function __construct() {
-        $this->id                 = 'cryptogate';
-        $this->method_title       = 'CryptoGate';
-        $this->method_description = 'Accept BTC, LTC, DOGE and DASH via CryptoGate. Funds go directly to your wallet — CryptoGate never holds them.';
+        $this->id                 = 'griffnode';
+        $this->method_title       = 'GriffNode';
+        $this->method_description = 'Accept BTC, LTC, DOGE and DASH via GriffNode. Funds go directly to your wallet — GriffNode never holds them.';
         $this->has_fields         = true; // we render a crypto selector on checkout
 
         $this->init_form_fields();
@@ -26,7 +26,7 @@ class CryptoGate_Gateway extends WC_Payment_Gateway {
             'enabled' => [
                 'title'   => 'Enable / Disable',
                 'type'    => 'checkbox',
-                'label'   => 'Enable CryptoGate payments',
+                'label'   => 'Enable GriffNode payments',
                 'default' => 'yes',
             ],
             'title' => [
@@ -53,7 +53,7 @@ class CryptoGate_Gateway extends WC_Payment_Gateway {
             'webhook_secret' => [
                 'title'    => 'Webhook Secret',
                 'type'     => 'password',
-                'desc_tip' => 'Found in your CryptoGate dashboard under Webhooks. Used to verify incoming payment events.',
+                'desc_tip' => 'Found in your GriffNode dashboard under Webhooks. Used to verify incoming payment events.',
             ],
         ];
     }
@@ -67,23 +67,23 @@ class CryptoGate_Gateway extends WC_Payment_Gateway {
 
         $pk = esc_attr( $this->get_option( 'publishable_key' ) );
         ?>
-        <div id="cryptogate-crypto-selector">
+        <div id="griffnode-crypto-selector">
             <p>
-                <label for="cryptogate_crypto"><?php esc_html_e( 'Select cryptocurrency', 'cryptogate-woocommerce' ); ?></label>
-                <select name="cryptogate_crypto" id="cryptogate_crypto" style="width:100%;margin-top:4px">
-                    <option value=""><?php esc_html_e( 'Loading...', 'cryptogate-woocommerce' ); ?></option>
+                <label for="griffnode_crypto"><?php esc_html_e( 'Select cryptocurrency', 'griffnode-woocommerce' ); ?></label>
+                <select name="griffnode_crypto" id="griffnode_crypto" style="width:100%;margin-top:4px">
+                    <option value=""><?php esc_html_e( 'Loading...', 'griffnode-woocommerce' ); ?></option>
                 </select>
             </p>
         </div>
         <script>
         (function() {
             var pk  = <?php echo json_encode( $pk ); ?>;
-            var sel = document.getElementById('cryptogate_crypto');
+            var sel = document.getElementById('griffnode_crypto');
             if (!pk) {
                 sel.innerHTML = '<option value="">No publishable key configured</option>';
                 return;
             }
-            fetch('<?php echo esc_url( CRYPTOGATE_API_BASE ); ?>/merchant/cryptos', {
+            fetch('<?php echo esc_url( GRIFFNODE_API_BASE ); ?>/merchant/cryptos', {
                 headers: { 'Authorization': 'Bearer ' + pk }
             })
             .then(function(r) { return r.json(); })
@@ -106,8 +106,8 @@ class CryptoGate_Gateway extends WC_Payment_Gateway {
     }
 
     public function validate_fields() {
-        if ( empty( $_POST['cryptogate_crypto'] ) ) {
-            wc_add_notice( __( 'Please select a cryptocurrency.', 'cryptogate-woocommerce' ), 'error' );
+        if ( empty( $_POST['griffnode_crypto'] ) ) {
+            wc_add_notice( __( 'Please select a cryptocurrency.', 'griffnode-woocommerce' ), 'error' );
             return false;
         }
         return true;
@@ -117,17 +117,17 @@ class CryptoGate_Gateway extends WC_Payment_Gateway {
 
     public function process_payment( $order_id ) {
         $order  = wc_get_order( $order_id );
-        $crypto = strtoupper( sanitize_text_field( $_POST['cryptogate_crypto'] ?? '' ) );
+        $crypto = strtoupper( sanitize_text_field( $_POST['griffnode_crypto'] ?? '' ) );
 
         if ( ! $crypto ) {
-            wc_add_notice( __( 'Please select a cryptocurrency.', 'cryptogate-woocommerce' ), 'error' );
+            wc_add_notice( __( 'Please select a cryptocurrency.', 'griffnode-woocommerce' ), 'error' );
             return [ 'result' => 'failure' ];
         }
 
         $amount   = (float) $order->get_total();
         $currency = strtoupper( get_woocommerce_currency() );
 
-        // Fall back to USD if the store currency is not supported by CryptoGate.
+        // Fall back to USD if the store currency is not supported by GriffNode.
         $supported_fiat = [ 'USD', 'PLN', 'EUR', 'GBP' ];
         if ( ! in_array( $currency, $supported_fiat, true ) ) {
             $currency = 'USD';
@@ -149,7 +149,7 @@ class CryptoGate_Gateway extends WC_Payment_Gateway {
             ],
         ];
 
-        $response = wp_remote_post( CRYPTOGATE_API_BASE . '/transactions/create', [
+        $response = wp_remote_post( GRIFFNODE_API_BASE . '/transactions/create', [
             'headers' => [
                 'Authorization' => 'Bearer ' . $secret_key,
                 'Content-Type'  => 'application/json',
@@ -160,7 +160,7 @@ class CryptoGate_Gateway extends WC_Payment_Gateway {
         ] );
 
         if ( is_wp_error( $response ) ) {
-            wc_add_notice( __( 'Payment error: could not reach CryptoGate. Please try again.', 'cryptogate-woocommerce' ), 'error' );
+            wc_add_notice( __( 'Payment error: could not reach GriffNode. Please try again.', 'griffnode-woocommerce' ), 'error' );
             return [ 'result' => 'failure' ];
         }
 
@@ -169,13 +169,13 @@ class CryptoGate_Gateway extends WC_Payment_Gateway {
 
         if ( $code !== 201 || empty( $body['data']['payment_url'] ) ) {
             $msg = $body['message'] ?? 'Unknown error';
-            wc_add_notice( sprintf( __( 'Payment error: %s', 'cryptogate-woocommerce' ), esc_html( $msg ) ), 'error' );
+            wc_add_notice( sprintf( __( 'Payment error: %s', 'griffnode-woocommerce' ), esc_html( $msg ) ), 'error' );
             return [ 'result' => 'failure' ];
         }
 
-        // Store the CryptoGate transaction ID on the order for webhook matching.
-        $order->update_meta_data( '_cryptogate_txid', $body['data']['txid'] );
-        $order->update_status( 'pending', __( 'Awaiting CryptoGate payment.', 'cryptogate-woocommerce' ) );
+        // Store the GriffNode transaction ID on the order for webhook matching.
+        $order->update_meta_data( '_griffnode_txid', $body['data']['txid'] );
+        $order->update_status( 'pending', __( 'Awaiting GriffNode payment.', 'griffnode-woocommerce' ) );
         $order->save();
 
         return [
