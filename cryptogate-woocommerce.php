@@ -1,11 +1,11 @@
 <?php
 /**
- * Plugin Name: CryptoGate for WooCommerce
- * Plugin URI:  https://docs.cryptogate.live
- * Description: Accept Bitcoin, Litecoin, Dogecoin and Dash payments via CryptoGate.
+ * Plugin Name: GriffNode for WooCommerce
+ * Plugin URI:  https://docs.griffnode.com
+ * Description: Accept Bitcoin, Litecoin, Dogecoin and Dash payments via GriffNode.
  * Version:     1.0.0
- * Author:      CryptoGate
- * Author URI:  https://cryptogate.live
+ * Author:      GriffNode
+ * Author URI:  https://griffnode.com
  * License:     MIT
  * Text Domain: cryptogate-woocommerce
  * Requires at least: 6.0
@@ -19,7 +19,7 @@ defined( 'ABSPATH' ) || exit;
 define( 'CRYPTOGATE_VERSION',    '1.0.0' );
 define( 'CRYPTOGATE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'CRYPTOGATE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'CRYPTOGATE_API_BASE',   'https://api.cryptogate.live' );
+define( 'CRYPTOGATE_API_BASE',   'https://api.griffnode.com' );
 
 // Declare HPOS compatibility.
 add_action( 'before_woocommerce_init', function () {

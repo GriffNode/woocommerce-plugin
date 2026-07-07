@@ -1,6 +1,6 @@
-# CryptoGate for WooCommerce
+# GriffNode for WooCommerce
 
-Accept Bitcoin, Litecoin, Dogecoin and Dash payments in your WooCommerce store. Customers pick their preferred coin at checkout and are redirected to a hosted payment page — funds go directly to your wallet, CryptoGate never holds them.
+Accept Bitcoin, Litecoin, Dogecoin and Dash payments in your WooCommerce store. Customers pick their preferred coin at checkout and are redirected to a hosted payment page — funds go directly to your wallet, GriffNode never holds them.
 
 **Requirements:** WordPress 6.0+, WooCommerce 7.0+, PHP 7.4+
 
@@ -20,7 +20,7 @@ Download the latest `cryptogate-woocommerce.zip` from the [Releases](https://git
 
 ### 3 — Configure
 
-Go to **WooCommerce → Settings → Payments**, find **CryptoGate** and click **Manage**.
+Go to **WooCommerce → Settings → Payments**, find **GriffNode** and click **Manage**.
 
 | Field | Where to find it |
 |-------|-----------------|
@@ -30,7 +30,7 @@ Go to **WooCommerce → Settings → Payments**, find **CryptoGate** and click *
 
 ### 4 — Register your webhook
 
-In your [CryptoGate dashboard](https://cryptogate.live/dashboard) go to **Webhooks** and add:
+In your [GriffNode dashboard](https://griffnode.com/dashboard) go to **Webhooks** and add:
 
 ```
 https://yourstore.com/?wc-api=cryptogate
@@ -49,9 +49,9 @@ The checkout dropdown only shows cryptos you have wallets configured for. Go to 
 ## How it works
 
 1. Customer selects a cryptocurrency at checkout and clicks Place Order
-2. Plugin calls the CryptoGate API and redirects the customer to a hosted payment page
+2. Plugin calls the GriffNode API and redirects the customer to a hosted payment page
 3. Customer sends the exact crypto amount within the 60-minute window
-4. CryptoGate fires a webhook — order is automatically marked as **Processing** in WooCommerce
+4. GriffNode fires a webhook — order is automatically marked as **Processing** in WooCommerce
 
 ---
 
@@ -63,6 +63,6 @@ Replace your live keys with `pk_test_...` and `sk_test_...` in the plugin settin
 
 ## Support
 
-- [Documentation](https://docs.cryptogate.live#woocommerce)
-- [CryptoGate Dashboard](https://cryptogate.live/dashboard) — open a support ticket
+- [Documentation](https://docs.griffnode.com#woocommerce)
+- [GriffNode Dashboard](https://griffnode.com/dashboard) — open a support ticket
 - [GitHub Issues](https://github.com/CryptoGateHQ/woocommerce-plugin/issues)
