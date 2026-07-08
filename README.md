@@ -10,7 +10,7 @@ Accept Bitcoin, Litecoin, Dogecoin and Dash payments in your WooCommerce store. 
 
 ### 1 — Download
 
-Download the latest `griffnode-woocommerce.zip` from the [Releases](https://github.com/CryptoGateHQ/woocommerce-plugin/releases) page.
+Download the latest `griffnode-woocommerce.zip` from the [Releases](https://github.com/GriffNode/woocommerce-plugin/releases) page.
 
 ### 2 — Install
 
@@ -65,4 +65,4 @@ Replace your live keys with `pk_test_...` and `sk_test_...` in the plugin settin
 
 - [Documentation](https://docs.griffnode.com#woocommerce)
 - [GriffNode Dashboard](https://griffnode.com/dashboard) — open a support ticket
-- [GitHub Issues](https://github.com/CryptoGateHQ/woocommerce-plugin/issues)
+- [GitHub Issues](https://github.com/GriffNode/woocommerce-plugin/issues)
