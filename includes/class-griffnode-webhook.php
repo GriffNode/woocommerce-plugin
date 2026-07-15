@@ -18,7 +18,7 @@ class GriffNode_Webhook {
             self::respond( 400, 'Webhook secret not configured.' );
         }
 
-        $sig_header = $_SERVER['HTTP_X_GRIFFNODE_SIGNATURE'] ?? '';
+        $sig_header = isset( $_SERVER['HTTP_X_GRIFFNODE_SIGNATURE'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_GRIFFNODE_SIGNATURE'] ) ) : '';
         // Header format: "sha256=<hex>"
         $expected = 'sha256=' . hash_hmac( 'sha256', $raw_body, $secret );
 
@@ -59,7 +59,7 @@ class GriffNode_Webhook {
 
         $order->payment_complete( $event['transaction_id'] ?? '' );
         $order->add_order_note( sprintf(
-            __( 'GriffNode payment confirmed. TX: %s | Crypto: %s | Amount: %s %s', 'griffnode-woocommerce' ),
+            __( 'GriffNode payment confirmed. TX: %s | Crypto: %s | Amount: %s %s', 'griffnode-for-woocommerce' ),
             $event['transaction_id'] ?? '—',
             $event['currency_crypto'] ?? '—',
             $event['amount_crypto'] ?? '—',
@@ -72,7 +72,7 @@ class GriffNode_Webhook {
         if ( ! $order ) return;
 
         $order->update_status( 'on-hold', sprintf(
-            __( 'GriffNode partial payment received. TX: %s — customer paid less than required. Awaiting resolution.', 'griffnode-woocommerce' ),
+            __( 'GriffNode partial payment received. TX: %s — customer paid less than required. Awaiting resolution.', 'griffnode-for-woocommerce' ),
             $event['transaction_id'] ?? '—'
         ) );
     }
@@ -83,7 +83,7 @@ class GriffNode_Webhook {
 
         if ( $order->has_status( 'pending' ) ) {
             $order->update_status( 'cancelled', sprintf(
-                __( 'GriffNode payment window expired. TX: %s', 'griffnode-woocommerce' ),
+                __( 'GriffNode payment window expired. TX: %s', 'griffnode-for-woocommerce' ),
                 $event['transaction_id'] ?? '—'
             ) );
         }
