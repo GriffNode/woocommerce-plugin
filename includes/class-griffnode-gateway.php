@@ -174,6 +174,7 @@ class GriffNode_Gateway extends WC_Payment_Gateway {
 
         if ( $code !== 201 || empty( $body['data']['payment_url'] ) ) {
             $msg = $body['message'] ?? 'Unknown error';
+            /* translators: %s: error message returned by the GriffNode API. */
             wc_add_notice( sprintf( __( 'Payment error: %s', 'griffnode-for-woocommerce' ), esc_html( $msg ) ), 'error' );
             return [ 'result' => 'failure' ];
         }
