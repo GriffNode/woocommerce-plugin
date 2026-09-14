@@ -4,7 +4,7 @@ Tags: woocommerce, cryptocurrency, bitcoin, crypto payments, payment gateway
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -38,6 +38,27 @@ Bitcoin (BTC), Ethereum (ETH), Litecoin (LTC), Dogecoin (DOGE), Dash (DASH), plu
 * Full REST API and SDKs (JavaScript, Python, PHP) at [docs.griffnode.com](https://docs.griffnode.com/).
 
 This plugin connects to the GriffNode API (griffnode.com) to create hosted payment sessions and receive payment webhooks; a free GriffNode account and API key are required.
+
+== External services ==
+
+This plugin relies on the GriffNode API (`api.griffnode.com`), operated by GriffNode, to create
+crypto payment sessions and to notify your store when a payment confirms. It is not optional —
+the plugin cannot function without it.
+
+**What is sent, and when:**
+
+* When a customer places an order and selects a cryptocurrency, the plugin sends the order total,
+  currency, the selected cryptocurrency, your store's return/cancel URLs, and the order's WooCommerce
+  ID/order key and billing email to `https://api.griffnode.com/transactions/create`, authenticated
+  with your Secret Key.
+* On the checkout page, your store's browser fetches the list of cryptocurrencies you've
+  configured wallets for from `https://api.griffnode.com/merchant/cryptos`, authenticated with your
+  Publishable Key (safe to expose — it grants no write access).
+* GriffNode sends signed payment-status webhooks (HMAC-SHA256) back to your store's
+  `?wc-api=griffnode` endpoint as the customer's payment is detected/confirmed/expires.
+
+See GriffNode's [Terms of Service](https://griffnode.com/terms) and
+[Privacy Policy](https://griffnode.com/privacy).
 
 == Installation ==
 
@@ -79,10 +100,34 @@ Full API and integration docs are at [docs.griffnode.com](https://docs.griffnode
 
 == Changelog ==
 
+= 1.0.1 =
+* Fix: transaction creation sent the fiat amount under the wrong field name, which the API
+  silently interpreted as USD regardless of your store's actual currency — non-USD stores were
+  billing the wrong crypto amount on every order. Fixed.
+* Fix: orders never automatically left "Pending" on payment, because the plugin looked for the
+  order under a field the API doesn't return for this integration. Order matching is now done via
+  the checkout metadata that's actually echoed back, with the transaction id used as a
+  cross-check.
+* Fix: two of the API's payment-status events (overpaid, failed) were not handled at all;
+  overpaid orders in particular could stay stuck "Pending" despite being paid. Both are now
+  handled.
+* Fix: the crypto selector on checkout built its dropdown via raw HTML string concatenation;
+  it's now built through the DOM API instead.
+* Improvement: resubmitting checkout (double-click, back-button) now reuses an order's existing
+  payment session for up to 55 minutes instead of creating a new one each time.
+* Improvement: customer email is now sent as its own field so the hosted payment page can
+  pre-fill it, instead of only being nested in metadata.
+* Improvement: the webhook endpoint now requires HTTPS.
+* Docs: added the required External Services disclosure.
+
 = 1.0.0 =
 * Initial release: non-custodial crypto payment gateway for WooCommerce (BTC, ETH, LTC, DOGE, DASH + USDT/USDC/DAI), hosted checkout, signed webhooks, HPOS support.
 
 == Upgrade Notice ==
+
+= 1.0.1 =
+Important correctness fixes: wrong-currency billing on non-USD stores and orders not
+auto-completing are both fixed. Upgrade is strongly recommended for all existing installs.
 
 = 1.0.0 =
 Initial release.

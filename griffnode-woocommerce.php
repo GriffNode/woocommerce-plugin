@@ -3,12 +3,12 @@
  * Plugin Name: GriffNode for WooCommerce
  * Plugin URI:  https://docs.griffnode.com/
  * Description: Accept Bitcoin, Ethereum, Litecoin, Dogecoin, Dash and USDT/USDC/DAI stablecoins in WooCommerce. Non-custodial - funds settle straight to your own wallet. No KYC, no chargebacks.
- * Version:     1.0.0
+ * Version:     1.0.1
  * Author:      GriffNode
  * Author URI:  https://griffnode.com
  * License:     GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: griffnode-for-woocommerce
+ * Text Domain: griffnode-woocommerce
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Requires Plugins: woocommerce
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'GRIFFNODE_VERSION',    '1.0.0' );
+define( 'GRIFFNODE_VERSION',    '1.0.1' );
 define( 'GRIFFNODE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GRIFFNODE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'GRIFFNODE_API_BASE',   'https://api.griffnode.com' );

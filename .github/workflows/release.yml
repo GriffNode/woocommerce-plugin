@@ -8,17 +8,19 @@ jobs:
   package:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Build install zip (top folder = plugin slug)
         run: |
           MAIN=$(grep -rl 'Plugin Name:' --include='*.php' . | head -1)
           SLUG=$(basename "$MAIN" .php)
           mkdir -p "build/$SLUG"
-          rsync -a --exclude='.git' --exclude='.github' --exclude='build' --exclude='README.md' ./ "build/$SLUG/"
+          # assets/ holds WordPress.org listing images (icon/banner/screenshots) — those
+          # ship via the .org SVN assets folder, never inside the installable plugin zip.
+          rsync -a --exclude='.git' --exclude='.github' --exclude='build' --exclude='README.md' --exclude='assets' ./ "build/$SLUG/"
           (cd build && zip -rq "../$SLUG.zip" "$SLUG")
           echo "ZIP=$SLUG.zip" >> "$GITHUB_ENV"
       - name: Attach the zip to the GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@01570a1f39cb168c169c802c3bceb9e93fb10974 # v2.1.0
         with:
           files: ${{ env.ZIP }}
       # WordPress.org auto-deploy — uncomment once the plugin is listed on WordPress.org and the
