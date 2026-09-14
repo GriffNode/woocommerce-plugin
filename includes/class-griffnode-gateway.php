@@ -69,9 +69,9 @@ class GriffNode_Gateway extends WC_Payment_Gateway {
         ?>
         <div id="griffnode-crypto-selector">
             <p>
-                <label for="griffnode_crypto"><?php esc_html_e( 'Select cryptocurrency', 'griffnode-for-woocommerce' ); ?></label>
+                <label for="griffnode_crypto"><?php esc_html_e( 'Select cryptocurrency', 'griffnode-woocommerce' ); ?></label>
                 <select name="griffnode_crypto" id="griffnode_crypto" style="width:100%;margin-top:4px">
-                    <option value=""><?php esc_html_e( 'Loading...', 'griffnode-for-woocommerce' ); ?></option>
+                    <option value=""><?php esc_html_e( 'Loading...', 'griffnode-woocommerce' ); ?></option>
                 </select>
             </p>
         </div>
@@ -93,9 +93,16 @@ class GriffNode_Gateway extends WC_Payment_Gateway {
                     sel.innerHTML = '<option value="">No cryptos configured — check your dashboard</option>';
                     return;
                 }
-                sel.innerHTML = cryptos.map(function(c) {
-                    return '<option value="' + c.symbol + '">' + c.name + ' (' + c.symbol + ')</option>';
-                }).join('');
+                // Build option elements via the DOM API rather than string-concatenated
+                // innerHTML — c.symbol/c.name come straight from the API response, and
+                // this way a future unexpected value can never execute as markup.
+                sel.innerHTML = '';
+                cryptos.forEach(function(c) {
+                    var opt = document.createElement('option');
+                    opt.value = c.symbol;
+                    opt.textContent = c.name + ' (' + c.symbol + ')';
+                    sel.appendChild(opt);
+                });
             })
             .catch(function() {
                 sel.innerHTML = '<option value="">Failed to load — try refreshing</option>';
@@ -110,7 +117,7 @@ class GriffNode_Gateway extends WC_Payment_Gateway {
         // phpcs:ignore WordPress.Security.NonceVerification.Missing
         $crypto = isset( $_POST['griffnode_crypto'] ) ? sanitize_text_field( wp_unslash( $_POST['griffnode_crypto'] ) ) : '';
         if ( '' === $crypto ) {
-            wc_add_notice( __( 'Please select a cryptocurrency.', 'griffnode-for-woocommerce' ), 'error' );
+            wc_add_notice( __( 'Please select a cryptocurrency.', 'griffnode-woocommerce' ), 'error' );
             return false;
         }
         return true;
@@ -119,13 +126,34 @@ class GriffNode_Gateway extends WC_Payment_Gateway {
     // ── Process payment ───────────────────────────────────────────────────────
 
     public function process_payment( $order_id ) {
-        $order  = wc_get_order( $order_id );
+        $order = wc_get_order( $order_id );
+        if ( ! $order ) {
+            wc_add_notice( __( 'Payment error: order not found.', 'griffnode-woocommerce' ), 'error' );
+            return [ 'result' => 'failure' ];
+        }
+
+        // Idempotency: a double-click on "Place order", a back-button resubmit, or a
+        // WooCommerce checkout retry would otherwise call /transactions/create again and
+        // overwrite the order's transaction id/payment URL, orphaning the first one. If
+        // this order already has a live GriffNode transaction (created within the last
+        // 55 minutes — transactions expire after 60), send the customer back to it
+        // instead of minting a new deposit address.
+        $existing_url     = $order->get_meta( '_griffnode_payment_url' );
+        $existing_created = (int) $order->get_meta( '_griffnode_created_at' );
+        if ( $existing_url && $order->has_status( 'pending' ) && $existing_created
+            && ( time() - $existing_created ) < 55 * MINUTE_IN_SECONDS ) {
+            return [
+                'result'   => 'success',
+                'redirect' => $existing_url,
+            ];
+        }
+
         // Nonce is verified by WooCommerce core during checkout before process_payment() runs.
         // phpcs:ignore WordPress.Security.NonceVerification.Missing
         $crypto = isset( $_POST['griffnode_crypto'] ) ? strtoupper( sanitize_text_field( wp_unslash( $_POST['griffnode_crypto'] ) ) ) : '';
 
         if ( ! $crypto ) {
-            wc_add_notice( __( 'Please select a cryptocurrency.', 'griffnode-for-woocommerce' ), 'error' );
+            wc_add_notice( __( 'Please select a cryptocurrency.', 'griffnode-woocommerce' ), 'error' );
             return [ 'result' => 'failure' ];
         }
 
@@ -141,13 +169,21 @@ class GriffNode_Gateway extends WC_Payment_Gateway {
         $secret_key = $this->get_option( 'secret_key' );
 
         $payload = [
-            'crypto'       => $crypto,
-            'amount'       => $amount,
-            'currency'     => $currency,
-            'order_id'     => (string) $order_id,
-            'success_url'  => $this->get_return_url( $order ),
-            'cancel_url'   => wc_get_cart_url(),
-            'metadata'     => [
+            'crypto'         => $crypto,
+            'amount'         => $amount,
+            // NOTE: the API's request field is "currency_fiat", not "currency" — see
+            // CreateTransactionRequest in hephaestus/internal/handlers/api/transaction.go.
+            // Sending the wrong key doesn't error, it silently defaults server-side to
+            // USD, which mis-bills every non-USD store. Keep this key exactly as-is.
+            'currency_fiat'  => $currency,
+            'customer_email' => $order->get_billing_email(),
+            'success_url'    => $this->get_return_url( $order ),
+            'cancel_url'     => wc_get_cart_url(),
+            // The basic /transactions/create endpoint has no top-level order_id field
+            // (only /transactions/create-detailed does) — metadata is the only channel
+            // that survives the round trip into the webhook payload, so wc_order_id
+            // belongs here, not as a top-level field.
+            'metadata'       => [
                 'wc_order_id'  => (string) $order_id,
                 'wc_order_key' => $order->get_order_key(),
                 'customer'     => $order->get_billing_email(),
@@ -165,7 +201,7 @@ class GriffNode_Gateway extends WC_Payment_Gateway {
         ] );
 
         if ( is_wp_error( $response ) ) {
-            wc_add_notice( __( 'Payment error: could not reach GriffNode. Please try again.', 'griffnode-for-woocommerce' ), 'error' );
+            wc_add_notice( __( 'Payment error: could not reach GriffNode. Please try again.', 'griffnode-woocommerce' ), 'error' );
             return [ 'result' => 'failure' ];
         }
 
@@ -175,13 +211,18 @@ class GriffNode_Gateway extends WC_Payment_Gateway {
         if ( $code !== 201 || empty( $body['data']['payment_url'] ) ) {
             $msg = $body['message'] ?? 'Unknown error';
             /* translators: %s: error message returned by the GriffNode API. */
-            wc_add_notice( sprintf( __( 'Payment error: %s', 'griffnode-for-woocommerce' ), esc_html( $msg ) ), 'error' );
+            wc_add_notice( sprintf( __( 'Payment error: %s', 'griffnode-woocommerce' ), esc_html( $msg ) ), 'error' );
             return [ 'result' => 'failure' ];
         }
 
         // Store the GriffNode transaction ID on the order for webhook matching.
-        $order->update_meta_data( '_griffnode_txid', $body['data']['txid'] );
-        $order->update_status( 'pending', __( 'Awaiting GriffNode payment.', 'griffnode-for-woocommerce' ) );
+        // NOTE: the API's create response field is "transaction_id" (the legacy "txid"
+        // key was retired when the backend moved to its canonical field names — see
+        // docs/sdk/api-inconsistencies.md, item B1). Keep this key exactly as-is.
+        $order->update_meta_data( '_griffnode_txid', $body['data']['transaction_id'] ?? '' );
+        $order->update_meta_data( '_griffnode_payment_url', $body['data']['payment_url'] );
+        $order->update_meta_data( '_griffnode_created_at', time() );
+        $order->update_status( 'pending', __( 'Awaiting GriffNode payment.', 'griffnode-woocommerce' ) );
         $order->save();
 
         return [
