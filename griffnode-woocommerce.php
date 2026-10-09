@@ -2,7 +2,7 @@
 /**
  * Plugin Name: GriffNode for WooCommerce
  * Plugin URI:  https://docs.griffnode.com/
- * Description: Accept Bitcoin, Ethereum, Litecoin, Dogecoin, Dash and USDT/USDC/DAI stablecoins in WooCommerce. Non-custodial - funds settle straight to your own wallet. No KYC, no chargebacks.
+ * Description: Accept Bitcoin, Ethereum, Litecoin, Dogecoin, Dash and USDT/USDC/DAI stablecoins in WooCommerce. Non-custodial - funds settle straight to your own wallet. No chargebacks.
  * Version:     1.0.1
  * Author:      GriffNode
  * Author URI:  https://griffnode.com
