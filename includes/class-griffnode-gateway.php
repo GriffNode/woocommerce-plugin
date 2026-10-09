@@ -6,7 +6,7 @@ class GriffNode_Gateway extends WC_Payment_Gateway {
     public function __construct() {
         $this->id                 = 'griffnode';
         $this->method_title       = 'GriffNode';
-        $this->method_description = 'Accept BTC, ETH, LTC, DOGE, DASH and USDT/USDC/DAI stablecoins via GriffNode. Funds settle directly to your own wallet - GriffNode never holds them. No KYC, no chargebacks.';
+        $this->method_description = 'Accept BTC, ETH, LTC, DOGE, DASH and USDT/USDC/DAI stablecoins via GriffNode. Funds settle directly to your own wallet - GriffNode never holds them. No chargebacks.';
         $this->has_fields         = true; // we render a crypto selector on checkout
 
         $this->init_form_fields();
