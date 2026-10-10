@@ -4,7 +4,7 @@ Tags: woocommerce, cryptocurrency, bitcoin, crypto payments, payment gateway
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -96,6 +96,11 @@ Full API and integration docs are at [docs.griffnode.com](https://docs.griffnode
 3. The hosted payment page with a BIP-21 QR code and live confirmation status.
 
 == Changelog ==
+
+= 1.0.2 =
+* Checkout script is now enqueued (wp_enqueue_script) instead of printed inline, and re-fills the selector after WooCommerce refreshes the checkout.
+* Text domain matches the plugin slug (griffnode-for-woocommerce); all user-facing strings translatable.
+* Fixed the Terms of Service and Privacy Policy links in External services.
 
 = 1.0.1 =
 * Fix: transaction creation sent the fiat amount under the wrong field name, which the API
