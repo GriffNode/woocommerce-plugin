@@ -27,6 +27,7 @@ define( 'GRIFFNODE_API_BASE',   'https://api.griffnode.com' );
 add_action( 'before_woocommerce_init', function () {
     if ( class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class ) ) {
         \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', __FILE__, true );
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'cart_checkout_blocks', __FILE__, true );
     }
 } );
 
@@ -45,6 +46,12 @@ add_action( 'plugins_loaded', function () {
     add_filter( 'woocommerce_payment_gateways', function ( $gateways ) {
         $gateways[] = 'GriffNode_Gateway';
         return $gateways;
+    } );
+
+    // Block-based Checkout support (the default checkout for new WooCommerce stores).
+    add_action( 'woocommerce_blocks_payment_method_type_registration', function ( $registry ) {
+        require_once GRIFFNODE_PLUGIN_DIR . 'includes/class-griffnode-blocks.php';
+        $registry->register( new GriffNode_Blocks() );
     } );
 
     // Register the webhook listener on wc-api=griffnode.

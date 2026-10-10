@@ -98,6 +98,7 @@ Full API and integration docs are at [docs.griffnode.com](https://docs.griffnode
 == Changelog ==
 
 = 1.0.2 =
+* Works in the block-based Checkout (the WooCommerce default for new stores) as well as the classic checkout.
 * Display name is now "GriffNode Crypto Payments for WooCommerce".
 * Checkout script is now enqueued (wp_enqueue_script) instead of printed inline, and re-fills the selector after WooCommerce refreshes the checkout.
 * Text domain matches the plugin slug (griffnode-for-woocommerce); all user-facing strings translatable.
