@@ -69,9 +69,9 @@ class GriffNode_Gateway extends WC_Payment_Gateway {
         ?>
         <div id="griffnode-crypto-selector">
             <p>
-                <label for="griffnode_crypto"><?php esc_html_e( 'Select cryptocurrency', 'griffnode-woocommerce' ); ?></label>
+                <label for="griffnode_crypto"><?php esc_html_e( 'Select cryptocurrency', 'griffnode-for-woocommerce' ); ?></label>
                 <select name="griffnode_crypto" id="griffnode_crypto" style="width:100%;margin-top:4px">
-                    <option value=""><?php esc_html_e( 'Loading...', 'griffnode-woocommerce' ); ?></option>
+                    <option value=""><?php esc_html_e( 'Loading...', 'griffnode-for-woocommerce' ); ?></option>
                 </select>
             </p>
         </div>
@@ -117,7 +117,7 @@ class GriffNode_Gateway extends WC_Payment_Gateway {
         // phpcs:ignore WordPress.Security.NonceVerification.Missing
         $crypto = isset( $_POST['griffnode_crypto'] ) ? sanitize_text_field( wp_unslash( $_POST['griffnode_crypto'] ) ) : '';
         if ( '' === $crypto ) {
-            wc_add_notice( __( 'Please select a cryptocurrency.', 'griffnode-woocommerce' ), 'error' );
+            wc_add_notice( __( 'Please select a cryptocurrency.', 'griffnode-for-woocommerce' ), 'error' );
             return false;
         }
         return true;
@@ -128,7 +128,7 @@ class GriffNode_Gateway extends WC_Payment_Gateway {
     public function process_payment( $order_id ) {
         $order = wc_get_order( $order_id );
         if ( ! $order ) {
-            wc_add_notice( __( 'Payment error: order not found.', 'griffnode-woocommerce' ), 'error' );
+            wc_add_notice( __( 'Payment error: order not found.', 'griffnode-for-woocommerce' ), 'error' );
             return [ 'result' => 'failure' ];
         }
 
@@ -153,7 +153,7 @@ class GriffNode_Gateway extends WC_Payment_Gateway {
         $crypto = isset( $_POST['griffnode_crypto'] ) ? strtoupper( sanitize_text_field( wp_unslash( $_POST['griffnode_crypto'] ) ) ) : '';
 
         if ( ! $crypto ) {
-            wc_add_notice( __( 'Please select a cryptocurrency.', 'griffnode-woocommerce' ), 'error' );
+            wc_add_notice( __( 'Please select a cryptocurrency.', 'griffnode-for-woocommerce' ), 'error' );
             return [ 'result' => 'failure' ];
         }
 
@@ -201,7 +201,7 @@ class GriffNode_Gateway extends WC_Payment_Gateway {
         ] );
 
         if ( is_wp_error( $response ) ) {
-            wc_add_notice( __( 'Payment error: could not reach GriffNode. Please try again.', 'griffnode-woocommerce' ), 'error' );
+            wc_add_notice( __( 'Payment error: could not reach GriffNode. Please try again.', 'griffnode-for-woocommerce' ), 'error' );
             return [ 'result' => 'failure' ];
         }
 
@@ -211,7 +211,7 @@ class GriffNode_Gateway extends WC_Payment_Gateway {
         if ( $code !== 201 || empty( $body['data']['payment_url'] ) ) {
             $msg = $body['message'] ?? 'Unknown error';
             /* translators: %s: error message returned by the GriffNode API. */
-            wc_add_notice( sprintf( __( 'Payment error: %s', 'griffnode-woocommerce' ), esc_html( $msg ) ), 'error' );
+            wc_add_notice( sprintf( __( 'Payment error: %s', 'griffnode-for-woocommerce' ), esc_html( $msg ) ), 'error' );
             return [ 'result' => 'failure' ];
         }
 
@@ -222,7 +222,7 @@ class GriffNode_Gateway extends WC_Payment_Gateway {
         $order->update_meta_data( '_griffnode_txid', $body['data']['transaction_id'] ?? '' );
         $order->update_meta_data( '_griffnode_payment_url', $body['data']['payment_url'] );
         $order->update_meta_data( '_griffnode_created_at', time() );
-        $order->update_status( 'pending', __( 'Awaiting GriffNode payment.', 'griffnode-woocommerce' ) );
+        $order->update_status( 'pending', __( 'Awaiting GriffNode payment.', 'griffnode-for-woocommerce' ) );
         $order->save();
 
         return [

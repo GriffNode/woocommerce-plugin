@@ -86,7 +86,7 @@ class GriffNode_Webhook {
         $order->payment_complete( $event['transaction_id'] ?? '' );
         $order->add_order_note( sprintf(
             /* translators: 1: GriffNode transaction ID, 2: crypto currency code, 3: crypto amount, 4: crypto currency code. */
-            __( 'GriffNode payment confirmed. TX: %1$s | Crypto: %2$s | Amount: %3$s %4$s', 'griffnode-woocommerce' ),
+            __( 'GriffNode payment confirmed. TX: %1$s | Crypto: %2$s | Amount: %3$s %4$s', 'griffnode-for-woocommerce' ),
             $event['transaction_id'] ?? '—',
             $event['currency_crypto'] ?? '—',
             $event['amount_crypto'] ?? '—',
@@ -101,7 +101,7 @@ class GriffNode_Webhook {
         if ( $order->has_status( 'pending' ) ) {
             $order->update_status( 'failed', sprintf(
                 /* translators: %s: GriffNode transaction ID. */
-                __( 'GriffNode payment failed. TX: %s', 'griffnode-woocommerce' ),
+                __( 'GriffNode payment failed. TX: %s', 'griffnode-for-woocommerce' ),
                 $event['transaction_id'] ?? '—'
             ) );
         }
@@ -113,7 +113,7 @@ class GriffNode_Webhook {
 
         $order->update_status( 'on-hold', sprintf(
             /* translators: %s: GriffNode transaction ID. */
-            __( 'GriffNode partial payment received. TX: %s - customer paid less than required. Awaiting resolution.', 'griffnode-woocommerce' ),
+            __( 'GriffNode partial payment received. TX: %s - customer paid less than required. Awaiting resolution.', 'griffnode-for-woocommerce' ),
             $event['transaction_id'] ?? '—'
         ) );
     }
@@ -125,7 +125,7 @@ class GriffNode_Webhook {
         if ( $order->has_status( 'pending' ) ) {
             $order->update_status( 'cancelled', sprintf(
                 /* translators: %s: GriffNode transaction ID. */
-                __( 'GriffNode payment window expired. TX: %s', 'griffnode-woocommerce' ),
+                __( 'GriffNode payment window expired. TX: %s', 'griffnode-for-woocommerce' ),
                 $event['transaction_id'] ?? '—'
             ) );
         }

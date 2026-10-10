@@ -57,8 +57,8 @@ the plugin cannot function without it.
 * GriffNode sends signed payment-status webhooks (HMAC-SHA256) back to your store's
   `?wc-api=griffnode` endpoint as the customer's payment is detected/confirmed/expires.
 
-See GriffNode's [Terms of Service](https://griffnode.com/terms) and
-[Privacy Policy](https://griffnode.com/privacy).
+See GriffNode's [Terms of Service](https://info.griffnode.com/terms-of-service) and
+[Privacy Policy](https://info.griffnode.com/privacy-policy).
 
 == Installation ==
 
