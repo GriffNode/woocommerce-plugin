@@ -65,7 +65,6 @@ class GriffNode_Gateway extends WC_Payment_Gateway {
             echo '<p>' . esc_html( $this->description ) . '</p>';
         }
 
-        $pk = esc_attr( $this->get_option( 'publishable_key' ) );
         ?>
         <div id="griffnode-crypto-selector">
             <p>
@@ -75,40 +74,6 @@ class GriffNode_Gateway extends WC_Payment_Gateway {
                 </select>
             </p>
         </div>
-        <script>
-        (function() {
-            var pk  = <?php echo wp_json_encode( $pk ); ?>;
-            var sel = document.getElementById('griffnode_crypto');
-            if (!pk) {
-                sel.innerHTML = '<option value="">No publishable key configured</option>';
-                return;
-            }
-            fetch('<?php echo esc_url( GRIFFNODE_API_BASE ); ?>/merchant/cryptos', {
-                headers: { 'Authorization': 'Bearer ' + pk }
-            })
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                var cryptos = (data && data.data && data.data.cryptocurrencies) ? data.data.cryptocurrencies : [];
-                if (!cryptos.length) {
-                    sel.innerHTML = '<option value="">No cryptos configured — check your dashboard</option>';
-                    return;
-                }
-                // Build option elements via the DOM API rather than string-concatenated
-                // innerHTML — c.symbol/c.name come straight from the API response, and
-                // this way a future unexpected value can never execute as markup.
-                sel.innerHTML = '';
-                cryptos.forEach(function(c) {
-                    var opt = document.createElement('option');
-                    opt.value = c.symbol;
-                    opt.textContent = c.name + ' (' + c.symbol + ')';
-                    sel.appendChild(opt);
-                });
-            })
-            .catch(function() {
-                sel.innerHTML = '<option value="">Failed to load — try refreshing</option>';
-            });
-        })();
-        </script>
         <?php
     }
 
@@ -211,6 +176,7 @@ class GriffNode_Gateway extends WC_Payment_Gateway {
         if ( $code !== 201 || empty( $body['data']['payment_url'] ) ) {
             $msg = $body['message'] ?? 'Unknown error';
             /* translators: %s: error message returned by the GriffNode API. */
+            /* translators: %s: error message returned by the GriffNode API. */
             wc_add_notice( sprintf( __( 'Payment error: %s', 'griffnode-for-woocommerce' ), esc_html( $msg ) ), 'error' );
             return [ 'result' => 'failure' ];
         }
@@ -232,6 +198,18 @@ class GriffNode_Gateway extends WC_Payment_Gateway {
     }
 
     public function enqueue_scripts() {
-        // Nothing extra needed — the inline script in payment_fields() handles everything.
+        if ( 'yes' !== $this->enabled || ! is_checkout() || is_order_received_page() ) {
+            return;
+        }
+        wp_enqueue_script( 'griffnode-checkout', GRIFFNODE_PLUGIN_URL . 'js/checkout.js', [ 'jquery' ], GRIFFNODE_VERSION, true );
+        wp_localize_script( 'griffnode-checkout', 'griffnodeCheckout', [
+            'pk'   => $this->get_option( 'publishable_key' ),
+            'api'  => esc_url_raw( GRIFFNODE_API_BASE ),
+            'i18n' => [
+                'noKey'  => __( 'No publishable key configured', 'griffnode-for-woocommerce' ),
+                'none'   => __( 'No cryptos configured, check your GriffNode dashboard', 'griffnode-for-woocommerce' ),
+                'failed' => __( 'Failed to load, try refreshing', 'griffnode-for-woocommerce' ),
+            ],
+        ] );
     }
 }
