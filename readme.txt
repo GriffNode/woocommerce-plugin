@@ -1,4 +1,4 @@
-=== GriffNode for WooCommerce ===
+=== GriffNode Crypto Payments for WooCommerce ===
 Contributors: griffnode
 Tags: woocommerce, cryptocurrency, bitcoin, crypto payments, payment gateway
 Requires at least: 6.0
@@ -98,6 +98,7 @@ Full API and integration docs are at [docs.griffnode.com](https://docs.griffnode
 == Changelog ==
 
 = 1.0.2 =
+* Display name is now "GriffNode Crypto Payments for WooCommerce".
 * Checkout script is now enqueued (wp_enqueue_script) instead of printed inline, and re-fills the selector after WooCommerce refreshes the checkout.
 * Text domain matches the plugin slug (griffnode-for-woocommerce); all user-facing strings translatable.
 * Fixed the Terms of Service and Privacy Policy links in External services.
