@@ -42,7 +42,7 @@ This plugin connects to the GriffNode API (griffnode.com) to create hosted payme
 == External services ==
 
 This plugin relies on the GriffNode API (`api.griffnode.com`), operated by GriffNode, to create
-crypto payment sessions and to notify your store when a payment confirms. It is not optional —
+crypto payment sessions and to notify your store when a payment confirms. It is not optional:
 the plugin cannot function without it.
 
 **What is sent, and when:**
@@ -53,7 +53,7 @@ the plugin cannot function without it.
   with your Secret Key.
 * On the checkout page, your store's browser fetches the list of cryptocurrencies you've
   configured wallets for from `https://api.griffnode.com/merchant/cryptos`, authenticated with your
-  Publishable Key (safe to expose — it grants no write access).
+  Publishable Key (safe to expose, it grants no write access).
 * GriffNode sends signed payment-status webhooks (HMAC-SHA256) back to your store's
   `?wc-api=griffnode` endpoint as the customer's payment is detected/confirmed/expires.
 
@@ -106,7 +106,7 @@ Full API and integration docs are at [docs.griffnode.com](https://docs.griffnode
 
 = 1.0.1 =
 * Fix: transaction creation sent the fiat amount under the wrong field name, which the API
-  silently interpreted as USD regardless of your store's actual currency — non-USD stores were
+  silently interpreted as USD regardless of your store's actual currency, so non-USD stores were
   billing the wrong crypto amount on every order. Fixed.
 * Fix: orders never automatically left "Pending" on payment, because the plugin looked for the
   order under a field the API doesn't return for this integration. Order matching is now done via
