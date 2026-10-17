@@ -38,7 +38,7 @@ class GriffNode_Gateway extends WC_Payment_Gateway {
             'description' => [
                 'title'   => 'Description',
                 'type'    => 'textarea',
-                'default' => 'Pay securely with Bitcoin, Litecoin, Dogecoin or Dash. You will be redirected to a hosted payment page.',
+                'default' => 'Pay securely with Bitcoin, Ethereum, Litecoin, Dogecoin, Dash or stablecoins. You will be redirected to a hosted payment page.',
             ],
             'publishable_key' => [
                 'title'    => 'Publishable Key (pk_live_ / pk_test_)',
@@ -53,7 +53,7 @@ class GriffNode_Gateway extends WC_Payment_Gateway {
             'webhook_secret' => [
                 'title'    => 'Webhook Secret',
                 'type'     => 'password',
-                'desc_tip' => 'Found in your GriffNode dashboard under Webhooks. Used to verify incoming payment events.',
+                'description' => __( 'Found in your GriffNode dashboard under Webhooks. Webhooks (Business plan and up) mark orders paid automatically. Without one, GriffNode emails you each payment and you set the order to Processing yourself.', 'griffnode-for-woocommerce' ),
             ],
         ];
     }
@@ -188,6 +188,10 @@ class GriffNode_Gateway extends WC_Payment_Gateway {
         $order->update_meta_data( '_griffnode_payment_url', $body['data']['payment_url'] );
         $order->update_meta_data( '_griffnode_created_at', time() );
         $order->update_status( 'pending', __( 'Awaiting GriffNode payment.', 'griffnode-for-woocommerce' ) );
+        if ( '' === $this->get_option( 'webhook_secret' ) ) {
+            // No webhook (e.g. Starter plan): nothing will update this order automatically.
+            $order->add_order_note( __( 'No GriffNode webhook is configured, so this order will not update by itself. GriffNode emails you when the payment completes; then set the order to Processing.', 'griffnode-for-woocommerce' ) );
+        }
         $order->save();
 
         return [
