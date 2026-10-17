@@ -57,6 +57,11 @@ class GriffNode_Webhook {
                 self::on_failed( $event );
                 break;
 
+            case 'payment.paid_late':
+            case 'payment.needs_review':
+                self::on_exception( $event, substr( $event['event'], 8 ) );
+                break;
+
             default:
                 // payment.created / payment.pending and any future event types: nothing
                 // to do (the order is already "pending" from process_payment()), but log
@@ -80,9 +85,12 @@ class GriffNode_Webhook {
         $order = self::find_order( $event );
         if ( ! $order ) return;
 
+        self::mark_done( $order );
         // Avoid double-processing.
         if ( $order->has_status( [ 'processing', 'completed' ] ) ) return;
 
+        // Also revives an order WooCommerce auto-cancelled (Hold stock timer) before the
+        // payment confirmed: payment_complete() accepts cancelled/failed/on-hold orders.
         $order->payment_complete( $event['transaction_id'] ?? '' );
         $order->add_order_note( sprintf(
             /* translators: 1: GriffNode transaction ID, 2: crypto currency code, 3: crypto amount, 4: crypto currency code. */
@@ -97,6 +105,7 @@ class GriffNode_Webhook {
     private static function on_failed( array $event ) {
         $order = self::find_order( $event );
         if ( ! $order ) return;
+        self::mark_done( $order );
 
         if ( $order->has_status( 'pending' ) ) {
             $order->update_status( 'failed', sprintf(
@@ -109,7 +118,9 @@ class GriffNode_Webhook {
 
     private static function on_partial( array $event ) {
         $order = self::find_order( $event );
-        if ( ! $order ) return;
+        if ( ! $order || $order->has_status( [ 'processing', 'completed' ] ) ) return;
+        if ( $order->has_status( 'on-hold' ) && $order->get_meta( '_griffnode_partial' ) ) return; // already noted
+        $order->update_meta_data( '_griffnode_partial', 1 );
 
         $order->update_status( 'on-hold', sprintf(
             /* translators: %s: GriffNode transaction ID. */
@@ -121,6 +132,7 @@ class GriffNode_Webhook {
     private static function on_expired( array $event ) {
         $order = self::find_order( $event );
         if ( ! $order ) return;
+        self::mark_done( $order );
 
         if ( $order->has_status( 'pending' ) ) {
             $order->update_status( 'cancelled', sprintf(
@@ -131,40 +143,47 @@ class GriffNode_Webhook {
         }
     }
 
-    // ── API status check (no webhook, e.g. Starter plan) ──────────────────────
+    /**
+     * Coins arrived after the payment window (paid_late), or the amount could not be read
+     * (needs_review). Money may be in the merchant's wallet, so never cancel: hold the
+     * order and say why. Not final: the merchant can confirm it in the GriffNode
+     * dashboard, which then completes the order on the next check.
+     */
+    private static function on_exception( array $event, string $kind ) {
+        $order = self::find_order( $event );
+        if ( ! $order || $order->has_status( [ 'processing', 'completed' ] ) ) return;
+        if ( $order->get_meta( '_griffnode_exception' ) === $kind ) return; // already noted
+
+        $order->update_meta_data( '_griffnode_exception', $kind );
+        $order->save();
+        $note = 'paid_late' === $kind
+            /* translators: %s: GriffNode transaction ID. */
+            ? __( 'GriffNode: coins arrived after the payment window. TX: %s. Check your wallet, then confirm or refund it in your GriffNode dashboard; a confirmation completes this order automatically.', 'griffnode-for-woocommerce' )
+            /* translators: %s: GriffNode transaction ID. */
+            : __( 'GriffNode: this payment needs your review. TX: %s. Check your wallet and decide in your GriffNode dashboard; a confirmation completes this order automatically.', 'griffnode-for-woocommerce' );
+        $order->update_status( 'on-hold', sprintf( $note, $event['transaction_id'] ?? '—' ) );
+    }
+
+    /** The transaction reached a final state: stop checking this order. */
+    private static function mark_done( \WC_Order $order ): void {
+        $order->update_meta_data( '_griffnode_done', 1 );
+        $order->save();
+    }
+
+    // ── API status check (see GriffNode_Poller) ───────────────────────────────
 
     /**
-     * Ask GriffNode for the order's transaction status and apply it through the same
-     * handlers a webhook would: on the thank-you page and by the griffnode_sync_pending
-     * cron. This is how the free Starter plan (no webhooks) gets order updates. Only touches pending orders,
-     * so repeated checks never re-apply a result.
+     * Apply a transaction as GET /transactions returns it, through the same handlers a
+     * webhook uses. Safe to call repeatedly: every handler is idempotent.
      */
-    public static function sync_order( \WC_Order $order ): void {
-        if ( ! $order->has_status( 'pending' ) ) return;
-        $txid = $order->get_meta( '_griffnode_txid' );
-        if ( ! $txid ) return;
-
-        $gateway  = new GriffNode_Gateway();
-        $response = wp_remote_get( GRIFFNODE_API_BASE . '/transactions/' . rawurlencode( $txid ), [
-            'headers' => [
-                'Authorization' => 'Bearer ' . $gateway->get_option( 'secret_key' ),
-                'Accept'        => 'application/json',
-            ],
-            'timeout' => 15,
-        ] );
-        if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) return;
-
-        $body = json_decode( wp_remote_retrieve_body( $response ), true );
-        $tx   = $body['data'] ?? null;
-        if ( ! is_array( $tx ) || ( $tx['transaction_id'] ?? '' ) !== $txid ) return;
-
-        // Same shape the webhook handlers read.
+    public static function apply_status( array $tx ): void {
         $event = [
-            'transaction_id'  => $txid,
+            'transaction_id'  => $tx['transaction_id'] ?? '',
             'metadata'        => $tx['metadata'] ?? [],
             'currency_crypto' => $tx['crypto'] ?? '',
             'amount_crypto'   => $tx['amount_paid'] ?? ( $tx['amount_crypto'] ?? '' ),
         ];
+        $exception = $tx['exception'] ?? '';
         switch ( $tx['status'] ?? '' ) {
             case 'completed':
             case 'overpaid':
@@ -174,29 +193,15 @@ class GriffNode_Webhook {
                 self::on_partial( $event );
                 break;
             case 'expired':
-                self::on_expired( $event );
+                'paid_late' === $exception ? self::on_exception( $event, 'paid_late' ) : self::on_expired( $event );
                 break;
             case 'failed':
                 self::on_failed( $event );
                 break;
-        }
-    }
-
-    /**
-     * Cron: check recent pending GriffNode orders. Bounded to 20 orders from the last
-     * 2 hours per run, well inside the Starter API limit (30 requests / min). Runs with a
-     * webhook too, as a backstop (missed delivery, or a plan downgraded to Starter):
-     * a webhook-confirmed order is no longer pending, so it is never checked twice.
-     */
-    public static function sync_pending(): void {
-        $orders = wc_get_orders( [
-            'payment_method' => 'griffnode',
-            'status'         => 'pending',
-            'date_created'   => '>' . ( time() - 2 * HOUR_IN_SECONDS ),
-            'limit'          => 20,
-        ] );
-        foreach ( $orders as $order ) {
-            self::sync_order( $order );
+            default: // pending / awaiting_confirmation
+                if ( 'needs_review' === $exception ) {
+                    self::on_exception( $event, 'needs_review' );
+                }
         }
     }
 

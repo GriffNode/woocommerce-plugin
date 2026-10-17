@@ -41,6 +41,7 @@ add_action( 'plugins_loaded', function () {
 
     require_once GRIFFNODE_PLUGIN_DIR . 'includes/class-griffnode-gateway.php';
     require_once GRIFFNODE_PLUGIN_DIR . 'includes/class-griffnode-webhook.php';
+    require_once GRIFFNODE_PLUGIN_DIR . 'includes/class-griffnode-poller.php';
 
     // Register the payment gateway.
     add_filter( 'woocommerce_payment_gateways', function ( $gateways ) {
@@ -57,25 +58,16 @@ add_action( 'plugins_loaded', function () {
     // Register the webhook listener on wc-api=griffnode.
     add_action( 'woocommerce_api_griffnode', [ 'GriffNode_Webhook', 'handle' ] );
 
-    // No webhook (e.g. Starter plan): check the API when the customer lands back on the
-    // thank-you page, and every 5 minutes for recent pending orders.
-    add_action( 'woocommerce_thankyou', function ( $order_id ) {
-        $order = wc_get_order( $order_id );
-        if ( $order && 'griffnode' === $order->get_payment_method() ) {
-            GriffNode_Webhook::sync_order( $order );
-        }
-    } );
-    add_action( 'griffnode_sync_pending', [ 'GriffNode_Webhook', 'sync_pending' ] );
-    if ( ! wp_next_scheduled( 'griffnode_sync_pending' ) ) {
-        wp_schedule_event( time() + 300, 'griffnode_five_minutes', 'griffnode_sync_pending' );
-    }
+    // Payment status checks: every 30s while a transaction is open (see the class).
+    GriffNode_Poller::init();
 } );
 
 add_filter( 'cron_schedules', function ( $schedules ) {
-    $schedules['griffnode_five_minutes'] = [ 'interval' => 300, 'display' => 'Every 5 minutes (GriffNode)' ];
+    $schedules['griffnode_minute'] = [ 'interval' => 60, 'display' => 'Every minute (GriffNode)' ];
     return $schedules;
 } );
 
 register_deactivation_hook( __FILE__, function () {
-    wp_clear_scheduled_hook( 'griffnode_sync_pending' );
+    wp_clear_scheduled_hook( 'griffnode_poll_kick' );
+    wp_clear_scheduled_hook( 'griffnode_sync_pending' ); // 1.0.2 and earlier
 } );
