@@ -98,7 +98,7 @@ Full API and integration docs are at [docs.griffnode.com](https://docs.griffnode
 == Changelog ==
 
 = 1.0.3 =
-* Works on every GriffNode plan. Without a webhook (free Starter plan) the plugin checks the payment status through the API when the customer returns to the thank-you page and every 5 minutes for pending orders from the last 2 hours. With a webhook (Business plan and up) orders update instantly.
+* Works on every GriffNode plan. Without a webhook (free Starter plan) the plugin checks the payment status through the API when the customer returns to the thank-you page and every 5 minutes for pending orders from the last 2 hours. With a webhook (Business plan and up) orders update instantly, and the status check stays on as a backstop (missed delivery, or a plan downgraded to Starter).
 * Default checkout description now lists Ethereum and stablecoins.
 
 = 1.0.2 =

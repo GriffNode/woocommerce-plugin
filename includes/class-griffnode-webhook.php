@@ -135,8 +135,8 @@ class GriffNode_Webhook {
 
     /**
      * Ask GriffNode for the order's transaction status and apply it through the same
-     * handlers a webhook would. Used when no webhook secret is configured: on the
-     * thank-you page and by the griffnode_sync_pending cron. Only touches pending orders,
+     * handlers a webhook would: on the thank-you page and by the griffnode_sync_pending
+     * cron. This is how the free Starter plan (no webhooks) gets order updates. Only touches pending orders,
      * so repeated checks never re-apply a result.
      */
     public static function sync_order( \WC_Order $order ): void {
@@ -184,12 +184,11 @@ class GriffNode_Webhook {
 
     /**
      * Cron: check recent pending GriffNode orders. Bounded to 20 orders from the last
-     * 2 hours per run, well inside the Starter API limit (30 requests / min).
+     * 2 hours per run, well inside the Starter API limit (30 requests / min). Runs with a
+     * webhook too, as a backstop (missed delivery, or a plan downgraded to Starter):
+     * a webhook-confirmed order is no longer pending, so it is never checked twice.
      */
     public static function sync_pending(): void {
-        $gateway = new GriffNode_Gateway();
-        if ( '' !== $gateway->get_option( 'webhook_secret' ) ) return; // webhook handles it
-
         $orders = wc_get_orders( [
             'payment_method' => 'griffnode',
             'status'         => 'pending',
