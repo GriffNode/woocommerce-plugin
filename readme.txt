@@ -66,7 +66,7 @@ See GriffNode's [Terms of Service](https://info.griffnode.com/terms-of-service) 
 2. In your GriffNode dashboard, copy your **Publishable key**, **Secret key** and **Webhook secret**.
 3. Install this plugin: Plugins → Add New → Upload, choose the zip, and Activate. (WooCommerce must be active.)
 4. Go to WooCommerce → Settings → Payments → **GriffNode** and paste your keys.
-5. Business plan and up: in your GriffNode dashboard, set the webhook URL to `https://your-store.com/?wc-api=griffnode` so orders are marked paid automatically. On the free Starter plan there is no webhook: GriffNode emails you each payment and you set the order to Processing yourself.
+5. Business plan and up: in your GriffNode dashboard, set the webhook URL to `https://your-store.com/?wc-api=griffnode` and paste the Webhook secret, so orders update the moment a payment confirms. On the free Starter plan leave the Webhook secret empty: the plugin checks GriffNode itself when the customer returns and every 5 minutes.
 6. Place a small test order to confirm end to end.
 
 == Frequently Asked Questions ==
@@ -98,7 +98,7 @@ Full API and integration docs are at [docs.griffnode.com](https://docs.griffnode
 == Changelog ==
 
 = 1.0.3 =
-* Automatic order updates use a GriffNode webhook (Business plan and up). Without a webhook, each order gets a note saying it must be set to Processing by hand after GriffNode emails you the payment.
+* Works on every GriffNode plan. Without a webhook (free Starter plan) the plugin checks the payment status through the API when the customer returns to the thank-you page and every 5 minutes for pending orders from the last 2 hours. With a webhook (Business plan and up) orders update instantly.
 * Default checkout description now lists Ethereum and stablecoins.
 
 = 1.0.2 =

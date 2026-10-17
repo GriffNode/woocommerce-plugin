@@ -53,7 +53,7 @@ class GriffNode_Gateway extends WC_Payment_Gateway {
             'webhook_secret' => [
                 'title'    => 'Webhook Secret',
                 'type'     => 'password',
-                'description' => __( 'Found in your GriffNode dashboard under Webhooks. Webhooks (Business plan and up) mark orders paid automatically. Without one, GriffNode emails you each payment and you set the order to Processing yourself.', 'griffnode-for-woocommerce' ),
+                'description' => __( 'Found in your GriffNode dashboard under Webhooks (Business plan and up): orders update the moment a payment confirms. Leave empty on the free Starter plan: the plugin then checks GriffNode itself, when the customer returns and every 5 minutes.', 'griffnode-for-woocommerce' ),
             ],
         ];
     }
@@ -188,10 +188,6 @@ class GriffNode_Gateway extends WC_Payment_Gateway {
         $order->update_meta_data( '_griffnode_payment_url', $body['data']['payment_url'] );
         $order->update_meta_data( '_griffnode_created_at', time() );
         $order->update_status( 'pending', __( 'Awaiting GriffNode payment.', 'griffnode-for-woocommerce' ) );
-        if ( '' === $this->get_option( 'webhook_secret' ) ) {
-            // No webhook (e.g. Starter plan): nothing will update this order automatically.
-            $order->add_order_note( __( 'No GriffNode webhook is configured, so this order will not update by itself. GriffNode emails you when the payment completes; then set the order to Processing.', 'griffnode-for-woocommerce' ) );
-        }
         $order->save();
 
         return [
