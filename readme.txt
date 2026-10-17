@@ -66,7 +66,7 @@ See GriffNode's [Terms of Service](https://info.griffnode.com/terms-of-service) 
 2. In your GriffNode dashboard, copy your **Publishable key**, **Secret key** and **Webhook secret**.
 3. Install this plugin: Plugins → Add New → Upload, choose the zip, and Activate. (WooCommerce must be active.)
 4. Go to WooCommerce → Settings → Payments → **GriffNode** and paste your keys.
-5. Business plan and up: in your GriffNode dashboard, set the webhook URL to `https://your-store.com/?wc-api=griffnode` and paste the Webhook secret, so orders update the moment a payment confirms. On the free Starter plan leave the Webhook secret empty: the plugin checks GriffNode itself when the customer returns and every 5 minutes.
+5. Business plan and up: in your GriffNode dashboard, set the webhook URL to `https://your-store.com/?wc-api=griffnode` and paste the Webhook secret, so orders update the moment a payment confirms. On the free Starter plan leave the Webhook secret empty: the plugin checks every open payment every 30 seconds by itself.
 6. Place a small test order to confirm end to end.
 
 == Frequently Asked Questions ==
@@ -98,7 +98,10 @@ Full API and integration docs are at [docs.griffnode.com](https://docs.griffnode
 == Changelog ==
 
 = 1.0.3 =
-* Works on every GriffNode plan. Without a webhook (free Starter plan) the plugin checks the payment status through the API when the customer returns to the thank-you page and every 5 minutes for pending orders from the last 2 hours. With a webhook (Business plan and up) orders update instantly, and the status check stays on as a backstop (missed delivery, or a plan downgraded to Starter).
+* Works on every GriffNode plan. Without a webhook (free Starter plan) the plugin checks all open orders every 30 seconds in one request. It does not depend on store visitors, and stops when no payment is open. With a webhook (Business plan and up) orders update instantly and the check stays on as a backstop.
+* Orders are followed until their payment is final, for up to 7 days: slow confirmations, orders WooCommerce auto-cancelled (Hold stock) before the coins confirmed, and partial payments topped up later now all complete correctly.
+* Coins that arrive after the payment window no longer cancel the order: it goes On hold with a note, and completes by itself once you confirm the payment in your GriffNode dashboard.
+* Admin notice when status checks fail (for example a wrong Secret Key).
 * Default checkout description now lists Ethereum and stablecoins.
 
 = 1.0.2 =

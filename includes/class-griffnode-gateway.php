@@ -53,7 +53,7 @@ class GriffNode_Gateway extends WC_Payment_Gateway {
             'webhook_secret' => [
                 'title'    => 'Webhook Secret',
                 'type'     => 'password',
-                'description' => __( 'Found in your GriffNode dashboard under Webhooks (Business plan and up): orders update the moment a payment confirms. Leave empty on the free Starter plan: the plugin then checks GriffNode itself, when the customer returns and every 5 minutes.', 'griffnode-for-woocommerce' ),
+                'description' => __( 'Found in your GriffNode dashboard under Webhooks (Business plan and up): orders update the moment a payment confirms. Leave empty on the free Starter plan: the plugin checks every open payment every 30 seconds by itself.', 'griffnode-for-woocommerce' ),
             ],
         ];
     }
@@ -189,6 +189,7 @@ class GriffNode_Gateway extends WC_Payment_Gateway {
         $order->update_meta_data( '_griffnode_created_at', time() );
         $order->update_status( 'pending', __( 'Awaiting GriffNode payment.', 'griffnode-for-woocommerce' ) );
         $order->save();
+        GriffNode_Poller::opened();
 
         return [
             'result'   => 'success',
