@@ -131,6 +131,76 @@ class GriffNode_Webhook {
         }
     }
 
+    // ── API status check (no webhook, e.g. Starter plan) ──────────────────────
+
+    /**
+     * Ask GriffNode for the order's transaction status and apply it through the same
+     * handlers a webhook would. Used when no webhook secret is configured: on the
+     * thank-you page and by the griffnode_sync_pending cron. Only touches pending orders,
+     * so repeated checks never re-apply a result.
+     */
+    public static function sync_order( \WC_Order $order ): void {
+        if ( ! $order->has_status( 'pending' ) ) return;
+        $txid = $order->get_meta( '_griffnode_txid' );
+        if ( ! $txid ) return;
+
+        $gateway  = new GriffNode_Gateway();
+        $response = wp_remote_get( GRIFFNODE_API_BASE . '/transactions/' . rawurlencode( $txid ), [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $gateway->get_option( 'secret_key' ),
+                'Accept'        => 'application/json',
+            ],
+            'timeout' => 15,
+        ] );
+        if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) return;
+
+        $body = json_decode( wp_remote_retrieve_body( $response ), true );
+        $tx   = $body['data'] ?? null;
+        if ( ! is_array( $tx ) || ( $tx['transaction_id'] ?? '' ) !== $txid ) return;
+
+        // Same shape the webhook handlers read.
+        $event = [
+            'transaction_id'  => $txid,
+            'metadata'        => $tx['metadata'] ?? [],
+            'currency_crypto' => $tx['crypto'] ?? '',
+            'amount_crypto'   => $tx['amount_paid'] ?? ( $tx['amount_crypto'] ?? '' ),
+        ];
+        switch ( $tx['status'] ?? '' ) {
+            case 'completed':
+            case 'overpaid':
+                self::on_completed( $event );
+                break;
+            case 'partial':
+                self::on_partial( $event );
+                break;
+            case 'expired':
+                self::on_expired( $event );
+                break;
+            case 'failed':
+                self::on_failed( $event );
+                break;
+        }
+    }
+
+    /**
+     * Cron: check recent pending GriffNode orders. Bounded to 20 orders from the last
+     * 2 hours per run, well inside the Starter API limit (30 requests / min).
+     */
+    public static function sync_pending(): void {
+        $gateway = new GriffNode_Gateway();
+        if ( '' !== $gateway->get_option( 'webhook_secret' ) ) return; // webhook handles it
+
+        $orders = wc_get_orders( [
+            'payment_method' => 'griffnode',
+            'status'         => 'pending',
+            'date_created'   => '>' . ( time() - 2 * HOUR_IN_SECONDS ),
+            'limit'          => 20,
+        ] );
+        foreach ( $orders as $order ) {
+            self::sync_order( $order );
+        }
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     /**
