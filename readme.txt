@@ -4,7 +4,7 @@ Tags: woocommerce, cryptocurrency, bitcoin, crypto payments, payment gateway
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.0.3
+Stable tag: 1.0.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -96,6 +96,9 @@ Full API and integration docs are at [docs.griffnode.com](https://docs.griffnode
 3. The hosted payment page with a BIP-21 QR code and live confirmation status.
 
 == Changelog ==
+
+= 1.0.4 =
+* The status check is scheduled only once a payment is open, never while WordPress is still loading, which fixes an early translation-loading notice on non-English stores.
 
 = 1.0.3 =
 * Works on every GriffNode plan. Without a webhook (free Starter plan) the plugin checks all open orders every 30 seconds in one request. It does not depend on store visitors, and stops when no payment is open. With a webhook (Business plan and up) orders update instantly and the check stays on as a backstop.

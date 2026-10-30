@@ -41,11 +41,6 @@ class GriffNode_Poller {
                 self::kick();
             }
         } );
-
-        // Real cron (DISABLE_WP_CRON + system cron) revives the loop even with zero traffic.
-        if ( ! wp_next_scheduled( 'griffnode_poll_kick' ) ) {
-            wp_schedule_event( time() + 60, 'griffnode_minute', 'griffnode_poll_kick' );
-        }
     }
 
     /** A new GriffNode transaction exists: start polling. */
@@ -57,7 +52,14 @@ class GriffNode_Poller {
 
     /** Start the loop if transactions are open and no run happened recently. */
     public static function kick() {
-        if ( ! get_option( self::OPEN ) || get_transient( self::LOCK ) ) return;
+        if ( ! get_option( self::OPEN ) ) return;
+        // Real cron (DISABLE_WP_CRON + system cron) revives the loop even with zero traffic.
+        // Never before the init action: scheduling runs the cron_schedules filter, and WooCommerce
+        // translates labels in it, which WordPress reports as loading translations too early.
+        if ( ! wp_next_scheduled( 'griffnode_poll_kick' ) ) {
+            wp_schedule_event( time() + 60, 'griffnode_minute', 'griffnode_poll_kick' );
+        }
+        if ( get_transient( self::LOCK ) ) return;
         if ( time() - (int) get_option( self::BEAT, 0 ) < 3 * self::INTERVAL ) return;
         // A start is already on its way (loopback not running yet): don't start a second loop.
         if ( get_transient( 'griffnode_poll_spawned' ) ) return;
@@ -79,12 +81,10 @@ class GriffNode_Poller {
 
         $open = self::poll();
         if ( $open ) {
-            // ponytail: one PHP worker sleeps between checks while payments are open.
-            // Fine at shop scale; a host with a hard request timeout under ~40s breaks
-            // the chain, and kick() restarts it on the next visit or cron run.
-            if ( function_exists( 'set_time_limit' ) ) {
-                @set_time_limit( 3 * self::INTERVAL ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
-            }
+            // ponytail: one PHP worker sleeps between checks while payments are open. sleep()
+            // does not count toward max_execution_time (except on Windows); a host with a hard
+            // request timeout under ~40s breaks the chain, and kick() restarts it on the next
+            // visit or cron run.
             sleep( self::INTERVAL );
             delete_transient( self::LOCK );
             self::spawn();
