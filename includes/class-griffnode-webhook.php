@@ -89,8 +89,21 @@ class GriffNode_Webhook {
         // Avoid double-processing.
         if ( $order->has_status( [ 'processing', 'completed' ] ) ) return;
 
-        // Also revives an order WooCommerce auto-cancelled (Hold stock timer) before the
-        // payment confirmed: payment_complete() accepts cancelled/failed/on-hold orders.
+        // payment_complete() also revives an order WooCommerce auto-cancelled (Hold stock
+        // timer) before the coins confirmed. By then the stock went back on sale, so if it
+        // sold out, completing would push it below zero and sell one item twice. Hold the
+        // order instead and let the merchant restock or refund.
+        if ( self::out_of_stock( $order ) ) {
+            if ( $order->get_meta( '_griffnode_stock_hold' ) ) return; // already told the merchant
+            $order->update_meta_data( '_griffnode_stock_hold', 1 );
+            self::hold( $order, sprintf(
+                /* translators: %s: GriffNode transaction ID. */
+                __( 'GriffNode payment confirmed after WooCommerce had released the stock. TX: %s. Restock and set this order to Processing, or refund the customer from your wallet.', 'griffnode-for-woocommerce' ),
+                $event['transaction_id'] ?? '—'
+            ) );
+            return;
+        }
+
         $order->payment_complete( $event['transaction_id'] ?? '' );
         $order->add_order_note( sprintf(
             /* translators: 1: GriffNode transaction ID, 2: crypto currency code, 3: crypto amount, 4: crypto currency code. */
@@ -122,7 +135,7 @@ class GriffNode_Webhook {
         if ( $order->has_status( 'on-hold' ) && $order->get_meta( '_griffnode_partial' ) ) return; // already noted
         $order->update_meta_data( '_griffnode_partial', 1 );
 
-        $order->update_status( 'on-hold', sprintf(
+        self::hold( $order, sprintf(
             /* translators: %s: GriffNode transaction ID. */
             __( 'GriffNode partial payment received. TX: %s - customer paid less than required. Awaiting resolution.', 'griffnode-for-woocommerce' ),
             $event['transaction_id'] ?? '—'
@@ -161,7 +174,51 @@ class GriffNode_Webhook {
             ? __( 'GriffNode: coins arrived after the payment window. TX: %s. Check your wallet, then confirm or refund it in your GriffNode dashboard; a confirmation completes this order automatically.', 'griffnode-for-woocommerce' )
             /* translators: %s: GriffNode transaction ID. */
             : __( 'GriffNode: this payment needs your review. TX: %s. Check your wallet and decide in your GriffNode dashboard; a confirmation completes this order automatically.', 'griffnode-for-woocommerce' );
-        $order->update_status( 'on-hold', sprintf( $note, $event['transaction_id'] ?? '—' ) );
+        self::hold( $order, sprintf( $note, $event['transaction_id'] ?? '—' ) );
+    }
+
+    /**
+     * Put an order on hold. WooCommerce takes stock when an order goes on-hold; if that
+     * stock is gone (the order was cancelled and the item sold since), skip taking it and
+     * say so, rather than going below zero. Setting the order to Processing later takes it.
+     */
+    private static function hold( \WC_Order $order, string $note ): void {
+        $short = self::out_of_stock( $order );
+        if ( ! $short ) {
+            $order->update_status( 'on-hold', $note );
+            return;
+        }
+        $id   = $order->get_id();
+        $skip = static function ( $reduce, $order_id ) use ( $id ) {
+            return (int) $order_id === $id ? false : $reduce;
+        };
+        add_filter( 'woocommerce_payment_complete_reduce_order_stock', $skip, 10, 2 );
+        $order->update_status( 'on-hold', $note . ' ' . sprintf(
+            /* translators: %s: comma-separated product names. */
+            __( 'Out of stock, not reserved: %s.', 'griffnode-for-woocommerce' ),
+            implode( ', ', $short )
+        ) );
+        remove_filter( 'woocommerce_payment_complete_reduce_order_stock', $skip, 10 );
+    }
+
+    /**
+     * Names of products in the order that taking stock now would push below zero. Empty when
+     * this order already holds its stock or the store does not track stock.
+     * ponytail: compares each line on its own; the same product on two lines is not summed.
+     */
+    private static function out_of_stock( \WC_Order $order ): array {
+        if ( 'yes' !== get_option( 'woocommerce_manage_stock' ) || $order->get_data_store()->get_stock_reduced( $order->get_id() ) ) {
+            return [];
+        }
+        $short = [];
+        foreach ( $order->get_items() as $item ) {
+            $product = $item->get_product();
+            if ( $product && $product->managing_stock() && ! $product->backorders_allowed()
+                && (float) $product->get_stock_quantity() < (float) $item->get_quantity() ) {
+                $short[] = $product->get_name();
+            }
+        }
+        return $short;
     }
 
     /** The transaction reached a final state: stop checking this order. */

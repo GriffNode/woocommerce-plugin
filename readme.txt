@@ -4,7 +4,7 @@ Tags: woocommerce, cryptocurrency, bitcoin, crypto payments, payment gateway
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.0.4
+Stable tag: 1.0.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -96,6 +96,9 @@ Full API and integration docs are at [docs.griffnode.com](https://docs.griffnode
 3. The hosted payment page with a BIP-21 QR code and live confirmation status.
 
 == Changelog ==
+
+= 1.0.5 =
+* Fix: a payment that confirms after WooCommerce cancelled the order (Hold stock) no longer sells an item twice. If the stock is gone, the order goes on hold with a note so you can restock or refund, instead of going below zero.
 
 = 1.0.4 =
 * The status check is scheduled only once a payment is open, never while WordPress is still loading, which fixes an early translation-loading notice on non-English stores.
