@@ -11,12 +11,13 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Build install zip (top folder = plugin slug)
         run: |
-          MAIN=$(grep -rl 'Plugin Name:' --include='*.php' . | head -1)
-          SLUG=$(basename "$MAIN" .php)
+          # Same folder + main file as the WordPress.org zip, so a GitHub install gets .org updates.
+          SLUG=griffnode-for-woocommerce
           mkdir -p "build/$SLUG"
           # assets/ holds WordPress.org listing images (icon/banner/screenshots) — those
           # ship via the .org SVN assets folder, never inside the installable plugin zip.
           rsync -a --exclude='.git' --exclude='.github' --exclude='build' --exclude='README.md' --exclude='assets' ./ "build/$SLUG/"
+          mv "build/$SLUG/griffnode-woocommerce.php" "build/$SLUG/$SLUG.php"
           (cd build && zip -rq "../$SLUG.zip" "$SLUG")
           echo "ZIP=$SLUG.zip" >> "$GITHUB_ENV"
       - name: Attach the zip to the GitHub Release
@@ -29,4 +30,4 @@ jobs:
       #   env:
       #     SVN_USERNAME: ${{ secrets.WPORG_SVN_USERNAME }}
       #     SVN_PASSWORD: ${{ secrets.WPORG_SVN_PASSWORD }}
-      #     SLUG: griffnode-woocommerce
+      #     SLUG: griffnode-for-woocommerce
