@@ -8,17 +8,23 @@ Accept Bitcoin, Litecoin, Dogecoin and Dash payments in your WooCommerce store. 
 
 ## Installation
 
-### 1 — Download
+### 1 — Install
 
-Download the latest `griffnode-woocommerce.zip` from the [Releases](https://github.com/GriffNode/woocommerce-plugin/releases) page.
+There are two ways to install it. Both are the same plugin.
 
-### 2 — Install
+**Option 1 (recommended): WordPress.org.** The plugin is in the [official WordPress.org directory](https://wordpress.org/plugins/griffnode-for-woocommerce/), so updates arrive automatically.
 
-1. In your WordPress admin go to **Plugins → Add New → Upload Plugin**
-2. Choose the downloaded ZIP and click **Install Now**
-3. Click **Activate Plugin**
+1. In WordPress admin go to **Plugins → Add New**
+2. Search for **GriffNode**
+3. On **GriffNode Crypto Payments for WooCommerce** click **Install Now**, then **Activate**
 
-### 3 — Configure
+**Option 2: ZIP from GitHub.** Use this if your host blocks installs from the directory.
+
+1. Download the latest `griffnode-for-woocommerce.zip` from the [Releases](https://github.com/GriffNode/woocommerce-plugin/releases) page
+2. In WordPress admin go to **Plugins → Add New → Upload Plugin**
+3. Choose the ZIP, click **Install Now**, then **Activate Plugin**
+
+### 2 — Configure
 
 Go to **WooCommerce → Settings → Payments**, find **GriffNode** and click **Manage**.
 
@@ -28,7 +34,7 @@ Go to **WooCommerce → Settings → Payments**, find **GriffNode** and click **
 | **Secret Key** | Dashboard → API Integration → `sk_live_...` — keep this private |
 | **Webhook Secret** | Dashboard → Webhooks → your endpoint's signing secret |
 
-### 4 — Register your webhook
+### 3 — Register your webhook
 
 In your [GriffNode dashboard](https://griffnode.com/dashboard) go to **Webhooks** and add:
 
@@ -40,7 +46,7 @@ Subscribe to: `payment.completed`, `payment.partial`, `payment.expired`
 
 Copy the signing secret into the **Webhook Secret** field in the plugin settings.
 
-### 5 — Add wallets
+### 4 — Add wallets
 
 The checkout dropdown only shows cryptos you have wallets configured for. Go to **Dashboard → Wallet Management** and add an xpub for each coin you want to accept.
 
@@ -65,4 +71,5 @@ Replace your live keys with `pk_test_...` and `sk_test_...` in the plugin settin
 
 - [Documentation](https://docs.griffnode.com#woocommerce)
 - [GriffNode Dashboard](https://griffnode.com/dashboard) — open a support ticket
+- [WordPress.org support forum](https://wordpress.org/support/plugin/griffnode-for-woocommerce/)
 - [GitHub Issues](https://github.com/GriffNode/woocommerce-plugin/issues)
